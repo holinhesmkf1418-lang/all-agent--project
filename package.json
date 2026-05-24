@@ -3,12 +3,13 @@
   "private": true,
   "type": "module",
   "workspaces": [
+    "packages/shared",
     "apps/server",
-    "apps/web",
-    "packages/shared"
+    "apps/web"
   ],
   "scripts": {
-    "dev": "npm run dev -w apps/server",
+    "dev": "concurrently \"npm run dev -w apps/server\" \"npm run dev -w apps/web\"",
+    "dev:server": "npm run dev -w apps/server",
     "dev:web": "npm run dev -w apps/web",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
@@ -16,5 +17,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

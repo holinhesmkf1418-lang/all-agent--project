@@ -113,9 +113,9 @@ Create `package.json`:
   "private": true,
   "type": "module",
   "workspaces": [
+    "packages/shared",
     "apps/server",
-    "apps/web",
-    "packages/shared"
+    "apps/web"
   ],
   "scripts": {
     "dev": "npm run dev -w apps/server",
