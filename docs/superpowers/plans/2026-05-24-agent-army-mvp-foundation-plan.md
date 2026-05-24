@@ -407,8 +407,7 @@ Create `apps/server/tsconfig.json`:
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": ".",
+    "noEmit": true,
     "types": ["node"]
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]
