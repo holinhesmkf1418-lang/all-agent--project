@@ -1490,8 +1490,23 @@ git commit -m "feat: add project workflow services"
 **Files:**
 - Create: `apps/server/src/app.ts`
 - Create: `apps/server/src/server.ts`
+- Create: `apps/server/src/http-error.ts`
 - Create: `apps/server/src/routes/agents.ts`
 - Create: `apps/server/src/routes/projects.ts`
+- Create: `apps/server/tests/api.test.ts`
+
+- [ ] **Step 0: Add HTTP error helper**
+
+Create `apps/server/src/http-error.ts`:
+
+```ts
+export class HttpError extends Error {
+  constructor(public readonly statusCode: number, message: string) {
+    super(message);
+    this.name = "HttpError";
+  }
+}
+```
 
 - [ ] **Step 1: Add agents route**
 
@@ -1521,6 +1536,7 @@ Create `apps/server/src/routes/projects.ts`:
 ```ts
 import { Router } from "express";
 import type { AppDatabase } from "../db/connection";
+import { HttpError } from "../http-error";
 import { ApprovalService } from "../services/approval-service";
 import { ProjectService } from "../services/project-service";
 
@@ -1559,7 +1575,10 @@ export function projectsRouter(db: AppDatabase): Router {
 
   router.post("/approvals/:approvalId/decision", async (req, res, next) => {
     try {
-      const decision = req.body.decision === "rejected" ? "rejected" : "approved";
+      const decision = req.body.decision;
+      if (decision !== "approved" && decision !== "rejected") {
+        throw new HttpError(400, "invalid decision");
+      }
       const snapshot = await approvalService.decide(req.params.approvalId, decision, String(req.body.comment || ""));
       res.json({ ok: true, snapshot });
     } catch (error) {
@@ -1581,6 +1600,7 @@ import express from "express";
 import type { AppDatabase } from "./db/connection";
 import { migrate } from "./db/schema";
 import { seedDefaultAgents } from "./db/seed";
+import { HttpError } from "./http-error";
 import { agentsRouter } from "./routes/agents";
 import { projectsRouter } from "./routes/projects";
 
@@ -1600,6 +1620,18 @@ export function createApp(db: AppDatabase) {
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     const message = error instanceof Error ? error.message : "unknown error";
+    if (error instanceof HttpError) {
+      res.status(error.statusCode).json({ ok: false, error: message });
+      return;
+    }
+    if (message.includes("not found")) {
+      res.status(404).json({ ok: false, error: message });
+      return;
+    }
+    if (message.includes("Approval is not pending") || message.includes("does not match project status")) {
+      res.status(409).json({ ok: false, error: message });
+      return;
+    }
     res.status(500).json({ ok: false, error: message });
   });
 
