@@ -17,8 +17,10 @@ export function seedDefaultAgents(db: AppDatabase): void {
   ] as const;
 
   const insert = db.prepare(`
-    INSERT OR IGNORE INTO agents (id, name, role, description, runtime_type, enabled)
+    INSERT INTO agents (id, name, role, description, runtime_type, enabled)
     VALUES (?, ?, ?, ?, ?, 1)
+    ON CONFLICT(id) DO UPDATE SET runtime_type = excluded.runtime_type
+    WHERE excluded.id = 'agent_developer'
   `);
   const tx = db.transaction(() => {
     for (const agent of defaultAgents) insert.run(...agent);
