@@ -108,7 +108,7 @@ describe("project flow", () => {
     expect(snapshot.stageTasks).toHaveLength(stageTaskCount);
   });
 
-  it("rejects plan and returns to planning without running another stage", async () => {
+  it("rejects plan and reruns planning to a new approval", async () => {
     const db = createTestDatabase();
     const projectService = new ProjectService(db);
     const approvalService = new ApprovalService(db, projectService);
@@ -122,9 +122,32 @@ describe("project flow", () => {
 
     snapshot = await approvalService.decide(pendingApprovalId(snapshot), "rejected", "计划需要调整");
 
-    expect(snapshot.project.status).toBe("planning");
-    expect(snapshot.stageTasks).toHaveLength(stageTaskCount);
+    expect(snapshot.project.status).toBe("waiting_plan");
+    expect(snapshot.stageTasks).toHaveLength(stageTaskCount + 1);
     expect(snapshot.approvals[0].status).toBe("rejected");
     expect(snapshot.approvals[0].comment).toBe("计划需要调整");
+    expect(snapshot.approvals.filter((item) => item.status === "pending")).toHaveLength(1);
+  });
+
+  it("rejects test results and reruns development through a new test approval", async () => {
+    const db = createTestDatabase();
+    const projectService = new ProjectService(db);
+    const approvalService = new ApprovalService(db, projectService);
+
+    let snapshot = await projectService.createProject({
+      title: "Todo app",
+      goal: "做一个待办清单 Web 应用",
+      uiStageEnabled: false
+    });
+    snapshot = await approvalService.decide(pendingApprovalId(snapshot), "approved", "计划通过");
+    snapshot = await approvalService.decide(pendingApprovalId(snapshot), "approved", "PRD 通过");
+    const stageTaskCount = snapshot.stageTasks.length;
+
+    snapshot = await approvalService.decide(pendingApprovalId(snapshot), "rejected", "测试不通过");
+
+    expect(snapshot.project.status).toBe("waiting_test");
+    expect(snapshot.stageTasks).toHaveLength(stageTaskCount + 2);
+    expect(snapshot.stageTasks.slice(-2).map((item) => item.stage)).toEqual(["developing", "testing"]);
+    expect(snapshot.approvals.filter((item) => item.status === "pending")).toHaveLength(1);
   });
 });

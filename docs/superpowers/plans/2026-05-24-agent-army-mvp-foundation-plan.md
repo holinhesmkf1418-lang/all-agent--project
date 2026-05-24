@@ -1314,7 +1314,7 @@ Expected: FAIL because services do not exist.
 Create `apps/server/src/services/project-service.ts`:
 
 ```ts
-import type { Approval, Artifact, Project, ProjectStatus, StageTask } from "@agent-army/shared";
+import type { Approval, Artifact, Project, StageTask } from "@agent-army/shared";
 import type { AppDatabase } from "../db/connection";
 import { stageDefinitions } from "../domain/constants";
 import { nextStatusAfterStageSuccess } from "../domain/workflow";
@@ -1354,8 +1354,7 @@ export class ProjectService {
   async createProject(input: { title: string; goal: string; uiStageEnabled: boolean }): Promise<ProjectSnapshot> {
     const project = this.projects.create(input);
     this.projects.updateStatus(project.id, "planning");
-    await this.runCurrentStage(project.id);
-    return this.snapshot(project.id);
+    return this.runUntilNextApprovalOrDelivery(project.id);
   }
 
   async runCurrentStage(projectId: string): Promise<ProjectSnapshot> {
@@ -1414,6 +1413,16 @@ export class ProjectService {
     return this.snapshot(projectId);
   }
 
+  async runUntilNextApprovalOrDelivery(projectId: string): Promise<ProjectSnapshot> {
+    for (let step = 0; step < stageDefinitions.length; step += 1) {
+      const project = this.projects.find(projectId);
+      const definition = stageDefinitions.find((item) => item.status === project.status);
+      if (!definition) break;
+      await this.runCurrentStage(projectId);
+    }
+    return this.snapshot(projectId);
+  }
+
   snapshot(projectId: string): ProjectSnapshot {
     return {
       project: this.projects.find(projectId),
@@ -1436,32 +1445,45 @@ Create `apps/server/src/services/approval-service.ts`:
 ```ts
 import type { ProjectSnapshot } from "./project-service";
 import type { AppDatabase } from "../db/connection";
-import { nextStatusAfterApproval, rejectionTarget } from "../domain/workflow";
+import { nextStatusAfterApproval, nextStatusAfterStageSuccess, rejectionTarget } from "../domain/workflow";
 import { ApprovalsRepository } from "../repositories/approvals";
 import { ProjectsRepository } from "../repositories/projects";
+import { StageTasksRepository } from "../repositories/stage-tasks";
 import { ProjectService } from "./project-service";
 
 export class ApprovalService {
   private readonly approvals: ApprovalsRepository;
   private readonly projects: ProjectsRepository;
+  private readonly stageTasks: StageTasksRepository;
 
   constructor(db: AppDatabase, private readonly projectService: ProjectService) {
     this.approvals = new ApprovalsRepository(db);
     this.projects = new ProjectsRepository(db);
+    this.stageTasks = new StageTasksRepository(db);
   }
 
   async decide(approvalId: string, decision: "approved" | "rejected", comment: string): Promise<ProjectSnapshot> {
-    const approval = this.approvals.decide(approvalId, decision, comment);
-    const project = this.projects.find(approval.projectId);
-    if (decision === "rejected") {
-      const target = rejectionTarget(project.status);
-      this.projects.updateStatus(project.id, target);
-      return this.projectService.snapshot(project.id);
+    const pendingApproval = this.approvals.find(approvalId);
+    if (pendingApproval.status !== "pending") {
+      throw new Error(`Approval is not pending: ${pendingApproval.id}`);
     }
 
-    const next = nextStatusAfterApproval(project.status, project.uiStageEnabled);
-    this.projects.updateStatus(project.id, next);
-    return this.projectService.runCurrentStage(project.id);
+    const project = this.projects.find(pendingApproval.projectId);
+    const stageTask = this.stageTasks.find(pendingApproval.stageTaskId);
+    const expectedProjectStatus = nextStatusAfterStageSuccess(stageTask.stage, project.uiStageEnabled);
+    if (project.status !== expectedProjectStatus) {
+      throw new Error(`Approval ${pendingApproval.id} does not match project status: ${project.status}`);
+    }
+
+    this.approvals.decide(approvalId, decision, comment);
+
+    if (decision === "rejected") {
+      this.projects.updateStatus(project.id, rejectionTarget(project.status));
+      return this.projectService.runUntilNextApprovalOrDelivery(project.id);
+    }
+
+    this.projects.updateStatus(project.id, nextStatusAfterApproval(project.status, project.uiStageEnabled));
+    return this.projectService.runUntilNextApprovalOrDelivery(project.id);
   }
 }
 ```
@@ -2261,7 +2283,7 @@ Verify:
 - Clicking `创建项目` creates a project and shows `planning` output.
 - Right panel shows a pending approval.
 - Clicking `确认继续` advances to PRD and creates PRD + wireframe artifacts.
-- Rejecting an approval returns the project to the expected previous stage.
+- Rejecting an approval reruns the rework path and returns to the next expected approval point.
 
 - [ ] **Step 5: Commit verification script changes**
 

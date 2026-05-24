@@ -33,7 +33,7 @@ export class ApprovalService {
 
     if (decision === "rejected") {
       this.projects.updateStatus(project.id, rejectionTarget(project.status));
-      return this.projectService.snapshot(project.id);
+      return this.projectService.runUntilNextApprovalOrDelivery(project.id);
     }
 
     this.projects.updateStatus(project.id, nextStatusAfterApproval(project.status, project.uiStageEnabled));

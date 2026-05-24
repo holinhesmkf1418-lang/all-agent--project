@@ -106,6 +106,23 @@ describe("api", () => {
     expect(response.body.error).toContain("Approval is not pending");
   });
 
+  it("reruns the rework path when an approval is rejected", async () => {
+    const created = await requestJson(baseUrl, "/api/projects", {
+      method: "POST",
+      body: JSON.stringify({ title: "Todo app", goal: "做一个待办清单 Web 应用", uiStageEnabled: false })
+    });
+    const approvalId = created.body.snapshot.approvals[0].id;
+
+    const rejected = await requestJson(baseUrl, `/api/projects/approvals/${approvalId}/decision`, {
+      method: "POST",
+      body: JSON.stringify({ decision: "rejected", comment: "计划需要调整" })
+    });
+
+    expect(rejected.status).toBe(200);
+    expect(rejected.body.snapshot.project.status).toBe("waiting_plan");
+    expect(rejected.body.snapshot.approvals.filter((approval: { status: string }) => approval.status === "pending")).toHaveLength(1);
+  });
+
   it("returns not found for missing projects", async () => {
     const response = await requestJson(baseUrl, "/api/projects/missing");
 
