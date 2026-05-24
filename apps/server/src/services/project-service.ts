@@ -64,6 +64,7 @@ export class ProjectService {
     });
 
     const result = await this.runtime.runTask(agent, task, {
+      projectId,
       projectGoal: project.goal,
       previousArtifacts: this.artifacts.listByProject(projectId)
     });

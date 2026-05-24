@@ -1,8 +1,9 @@
 import type { Agent, ArtifactType, StageTask } from "@agent-army/shared";
 
 export interface RuntimeContext {
+  projectId: string;
   projectGoal: string;
-  previousArtifacts: { type: ArtifactType; title: string; content: string }[];
+  previousArtifacts: { type: ArtifactType; title: string; content: string; filePath?: string }[];
 }
 
 export interface RuntimeArtifactDraft {
