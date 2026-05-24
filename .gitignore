@@ -8,3 +8,5 @@ data/*.db-wal
 apps/server/data/*.db
 apps/server/data/*.db-shm
 apps/server/data/*.db-wal
+generated-projects/
+apps/server/generated-projects/
