@@ -120,9 +120,9 @@ Create `package.json`:
   "scripts": {
     "dev": "npm run dev -w apps/server",
     "dev:web": "npm run dev -w apps/web",
-    "build": "npm run build -ws",
-    "test": "npm run test -ws",
-    "typecheck": "npm run typecheck -ws"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
   },
   "engines": {
     "node": ">=20"
@@ -2183,9 +2183,9 @@ Modify root `package.json` scripts:
     "dev": "concurrently \"npm run dev -w apps/server\" \"npm run dev -w apps/web\"",
     "dev:server": "npm run dev -w apps/server",
     "dev:web": "npm run dev -w apps/web",
-    "build": "npm run build -ws",
-    "test": "npm run test -ws",
-    "typecheck": "npm run typecheck -ws"
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
   }
 }
 ```

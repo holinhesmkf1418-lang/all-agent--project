@@ -1,1 +1,7 @@
 .superpowers/
+node_modules/
+dist/
+.env
+data/*.db
+data/*.db-shm
+data/*.db-wal
