@@ -1,0 +1,162 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f6f7f9;
+  color: #172033;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  padding: 24px 32px 14px;
+  background: #ffffff;
+  border-bottom: 1px solid #dfe3ea;
+}
+
+.topbar h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.topbar p {
+  margin: 0;
+  color: #687386;
+}
+
+.goal-bar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #dfe3ea;
+}
+
+.goal-bar input[type="text"],
+.goal-bar input:not([type]) {
+  width: 100%;
+}
+
+input {
+  min-height: 40px;
+  border: 1px solid #cfd6e2;
+  border-radius: 8px;
+  padding: 0 12px;
+}
+
+button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #ffffff;
+  background: #2563eb;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #64748b;
+}
+
+.workbench {
+  display: grid;
+  grid-template-columns: 260px minmax(420px, 1fr) 340px;
+  gap: 16px;
+  padding: 16px 32px 32px;
+}
+
+.panel {
+  min-height: 520px;
+  background: #ffffff;
+  border: 1px solid #dfe3ea;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.panel h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+
+.agent-list,
+.artifact-list,
+.stage-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-row,
+.artifact-card,
+.stage-card,
+.approval-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfcfe;
+}
+
+.agent-row span,
+.muted,
+.artifact-card small,
+.stage-card span {
+  display: block;
+  margin-top: 4px;
+  color: #687386;
+  font-size: 13px;
+}
+
+.stage-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stage-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.artifact-card h3,
+.stage-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.artifact-card p,
+.stage-card p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.error-banner {
+  margin: 16px 32px 0;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+@media (max-width: 980px) {
+  .goal-bar,
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+}
