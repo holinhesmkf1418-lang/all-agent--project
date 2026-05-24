@@ -69,7 +69,13 @@ export class ApprovalsRepository {
   }
 
   decide(id: string, status: "approved" | "rejected", comment: string): Approval {
-    this.db.prepare("UPDATE approvals SET status = ?, decision = ?, comment = ?, decided_at = ? WHERE id = ?").run(status, status, comment, nowIso(), id);
+    const result = this.db
+      .prepare("UPDATE approvals SET status = ?, decision = ?, comment = ?, decided_at = ? WHERE id = ? AND status = 'pending'")
+      .run(status, status, comment, nowIso(), id);
+    if (result.changes === 0) {
+      const approval = this.find(id);
+      throw new Error(`Approval is not pending: ${approval.id}`);
+    }
     return this.find(id);
   }
 
