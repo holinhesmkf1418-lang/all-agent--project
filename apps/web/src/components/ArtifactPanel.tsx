@@ -31,6 +31,7 @@ export function ArtifactPanel({
             <h3>{artifact.title}</h3>
             <small>{artifact.type}</small>
             <p>{artifact.content}</p>
+            {artifact.filePath && <code className="artifact-path">{artifact.filePath}</code>}
           </article>
         ))}
       </div>

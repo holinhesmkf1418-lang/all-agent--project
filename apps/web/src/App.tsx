@@ -4,6 +4,7 @@ import { createProject, decideApproval, fetchAgents, type ProjectSnapshot } from
 import { AgentSidebar } from "./components/AgentSidebar";
 import { ArtifactPanel } from "./components/ArtifactPanel";
 import { ProjectBoard } from "./components/ProjectBoard";
+import { ProjectStatusBanner } from "./components/ProjectStatusBanner";
 import "./styles.css";
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
       </section>
 
       {error && <div className="error-banner">{error}</div>}
+      <ProjectStatusBanner status={snapshot?.project.status || null} />
 
       <div className="workbench">
         <AgentSidebar agents={agents} />
