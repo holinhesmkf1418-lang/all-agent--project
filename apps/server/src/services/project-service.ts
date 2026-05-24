@@ -8,7 +8,8 @@ import { ArtifactsRepository } from "../repositories/artifacts";
 import { ProjectsRepository } from "../repositories/projects";
 import { RunsRepository } from "../repositories/runs";
 import { StageTasksRepository } from "../repositories/stage-tasks";
-import { MockRuntimeAdapter } from "../runtime/mock-adapter";
+import type { RuntimeResult } from "../runtime/adapter";
+import { RuntimeRegistry } from "../runtime/runtime-registry";
 
 export interface ProjectSnapshot {
   project: Project;
@@ -24,9 +25,10 @@ export class ProjectService {
   private readonly runs: RunsRepository;
   private readonly artifacts: ArtifactsRepository;
   private readonly approvals: ApprovalsRepository;
-  private readonly runtime = new MockRuntimeAdapter();
+  private readonly runtimeRegistry: RuntimeRegistry;
 
-  constructor(private readonly db: AppDatabase) {
+  constructor(private readonly db: AppDatabase, runtimeRegistry = new RuntimeRegistry()) {
+    this.runtimeRegistry = runtimeRegistry;
     this.projects = new ProjectsRepository(db);
     this.agents = new AgentsRepository(db);
     this.tasks = new StageTasksRepository(db);
@@ -63,11 +65,20 @@ export class ProjectService {
       prompt: task.input
     });
 
-    const result = await this.runtime.runTask(agent, task, {
-      projectId,
-      projectGoal: project.goal,
-      previousArtifacts: this.artifacts.listByProject(projectId)
-    });
+    let result: RuntimeResult;
+    try {
+      result = await this.runtimeRegistry.get(agent.runtimeType).runTask(agent, task, {
+        projectId,
+        projectGoal: project.goal,
+        previousArtifacts: this.artifacts.listByProject(projectId)
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.runs.finish(run.id, "failed", "", message);
+      this.tasks.updateStatus(task.id, "failed", message);
+      this.projects.updateStatus(projectId, "blocked");
+      return this.snapshot(projectId);
+    }
 
     const finishedRun = this.runs.finish(run.id, "succeeded", result.logs);
     const createdArtifacts = result.artifacts.map((artifact) =>
